@@ -11,57 +11,56 @@ import (
 	_ "image/png"
 )
 
-type colors struct {
+type colorSums struct {
 	mux sync.Mutex
-	// sum of color values ∈ [0,255]
-	redSum   float64
-	greenSum float64
-	blueSum  float64
-	alphaSum float64
+	// sum of alpha-premultiplied color values ∈ [0,65535]
+	redSum   uint64
+	greenSum uint64
+	blueSum  uint64
+	alphaSum uint64
 }
 
-func (c *colors) Inc(r, g, b, a float64) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
+func (cs *colorSums) inc(r, g, b, a uint64) {
+	cs.mux.Lock()
+	defer cs.mux.Unlock()
 
-	c.redSum += r
-	c.greenSum += g
-	c.blueSum += b
-	c.alphaSum += a
+	cs.redSum += r
+	cs.greenSum += g
+	cs.blueSum += b
+	cs.alphaSum += a
 }
 
 func AverageColor(img image.Image) color.NRGBA {
 	bounds := img.Bounds()
-	pxNumber := bounds.Max.X * bounds.Max.Y
-	clrs := &colors{}
+	cs := &colorSums{}
 
 	var wg sync.WaitGroup
 	wg.Add(bounds.Max.Y)
 	for y := 0; y < bounds.Max.Y; y++ {
 		go func(y int) {
 			defer wg.Done()
-			var reds, greens, blues, alphas float64
+			var reds, greens, blues, alphas uint64
 			for x := 0; x < bounds.Max.X; x++ {
 				redAP, greenAP, blueAP, alphaAP := img.At(x, y).RGBA() // alpha-premultiplied values
-				red := float64(redAP*0xff) / float64(alphaAP)
-				green := float64(greenAP*0xff) / float64(alphaAP)
-				blue := float64(blueAP*0xff) / float64(alphaAP)
-				alpha := float64(alphaAP * 0xff / 0xffff)
-				reds += red
-				greens += green
-				blues += blue
-				alphas += alpha
+				reds += uint64(redAP)
+				greens += uint64(greenAP)
+				blues += uint64(blueAP)
+				alphas += uint64(alphaAP)
 			}
-			clrs.Inc(reds, greens, blues, alphas)
+			cs.inc(reds, greens, blues, alphas)
 		}(y)
 	}
 	wg.Wait()
 
-	var red, green, blue, alpha uint8
-	red = uint8(math.Round(clrs.redSum / float64(pxNumber)))
-	green = uint8(math.Round(clrs.greenSum / float64(pxNumber)))
-	blue = uint8(math.Round(clrs.blueSum / float64(pxNumber)))
-	alpha = uint8(math.Round(clrs.alphaSum / float64(pxNumber)))
+	pixelCount := bounds.Max.X * bounds.Max.Y
+	averageRGBA64 := color.RGBA64{
+		R: uint16(math.RoundToEven(float64(cs.redSum) / float64(pixelCount))),
+		G: uint16(math.RoundToEven(float64(cs.greenSum) / float64(pixelCount))),
+		B: uint16(math.RoundToEven(float64(cs.blueSum) / float64(pixelCount))),
+		A: uint16(math.RoundToEven(float64(cs.alphaSum) / float64(pixelCount))),
+	}
+	nrgbaModel := color.NRGBAModel
+	averageNRGBA := nrgbaModel.Convert(averageRGBA64).(color.NRGBA)
 
-	return color.NRGBA{red, green, blue, alpha}
+	return averageNRGBA
 }
