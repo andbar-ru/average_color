@@ -41,5 +41,6 @@ func TestAverageColor(t *testing.T) {
 	testImage(t, "./testdata/brbw.png", color.NRGBA{128, 64, 128, 255})
 	testImage(t, "./testdata/trbw.png", color.NRGBA{170, 85, 170, 191})
 	testImage(t, "./testdata/brbt.png", color.NRGBA{85, 0, 85, 191})
+	testImage(t, "./testdata/audio-headset.png", color.NRGBA{53, 52, 52, 62})
 	testImage(t, "./testdata/thumb.jpg", color.NRGBA{126, 140, 148, 255})
 }

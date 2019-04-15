@@ -52,15 +52,15 @@ func AverageColor(img image.Image) color.NRGBA {
 	}
 	wg.Wait()
 
-	pixelCount := bounds.Max.X * bounds.Max.Y
-	averageRGBA64 := color.RGBA64{
-		R: uint16(math.RoundToEven(float64(cs.redSum) / float64(pixelCount))),
-		G: uint16(math.RoundToEven(float64(cs.greenSum) / float64(pixelCount))),
-		B: uint16(math.RoundToEven(float64(cs.blueSum) / float64(pixelCount))),
-		A: uint16(math.RoundToEven(float64(cs.alphaSum) / float64(pixelCount))),
+	if cs.alphaSum == 0 {
+		return color.NRGBA{0, 0, 0, 0}
 	}
-	nrgbaModel := color.NRGBAModel
-	averageNRGBA := nrgbaModel.Convert(averageRGBA64).(color.NRGBA)
 
-	return averageNRGBA
+	maxPossibleSum := bounds.Max.X * bounds.Max.Y * 0xffff
+	red := uint8(math.RoundToEven(float64(cs.redSum*0xff) / float64(cs.alphaSum)))
+	green := uint8(math.RoundToEven(float64(cs.greenSum*0xff) / float64(cs.alphaSum)))
+	blue := uint8(math.RoundToEven(float64(cs.blueSum*0xff) / float64(cs.alphaSum)))
+	alpha := uint8(math.RoundToEven(float64(cs.alphaSum*0xff) / float64(maxPossibleSum)))
+
+	return color.NRGBA{red, green, blue, alpha}
 }
