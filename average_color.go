@@ -56,10 +56,10 @@ func AverageColor(img image.Image) color.NRGBA {
 		return color.NRGBA{0, 0, 0, 0}
 	}
 
-	maxPossibleSum := bounds.Max.X * bounds.Max.Y * 0xffff
 	red := uint8(math.RoundToEven(float64(cs.redSum*0xff) / float64(cs.alphaSum)))
 	green := uint8(math.RoundToEven(float64(cs.greenSum*0xff) / float64(cs.alphaSum)))
 	blue := uint8(math.RoundToEven(float64(cs.blueSum*0xff) / float64(cs.alphaSum)))
+	maxPossibleSum := bounds.Max.X * bounds.Max.Y * 0xffff
 	alpha := uint8(math.RoundToEven(float64(cs.alphaSum*0xff) / float64(maxPossibleSum)))
 
 	return color.NRGBA{red, green, blue, alpha}
